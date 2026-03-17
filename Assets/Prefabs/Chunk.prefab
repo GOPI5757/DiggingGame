@@ -129,3 +129,4 @@ MonoBehaviour:
   chunkSize: {x: 0, y: 0, z: 0}
   vertices: []
   triangles: 
+  sandMat: {fileID: 2100000, guid: ee15834aaf6a20348b5ee1b92812faed, type: 2}

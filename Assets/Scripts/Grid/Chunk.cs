@@ -10,14 +10,16 @@ namespace DiggingGame.Grid
         public Vector3Int coord;
         public BlockType blockType;
         public int strength;
+        public int maxStrength;
         public Vector3 worldPos;
         public Vector3 localPos;
     
-        public BlockData(Vector3Int coord, BlockType blockType, int strength, Vector3 worldPos, Vector3 localPos)
+        public BlockData(Vector3Int coord, BlockType blockType, int strength, int maxStrength, Vector3 worldPos, Vector3 localPos)
         {
             this.coord = coord;
             this.blockType = blockType;
             this.strength = strength;
+            this.maxStrength = maxStrength;
             this.worldPos = worldPos;
             this.localPos = localPos;
         }
@@ -32,6 +34,7 @@ namespace DiggingGame.Grid
         [SerializeField] private List<int> triangles = new List<int>();
 
         [SerializeField] private BlockData[,,] block_Datas;
+        [SerializeField] private Material sandMat;
 
         private string chunkName;
 
@@ -118,6 +121,7 @@ namespace DiggingGame.Grid
                             new Vector3Int(i, j, k),
                             BlockType.Sand,
                             5,
+                            5,
                             transform.position + new Vector3(i, j, k),
                             new Vector3(i, j, k)
                         );
@@ -197,7 +201,7 @@ namespace DiggingGame.Grid
             mesh.triangles = triangles.ToArray();
             mesh.RecalculateNormals();
 
-            GetComponent<Renderer>().material.color = Color.sandyBrown;
+            GetComponent<Renderer>().material = sandMat;
             GetComponent<MeshCollider>().sharedMesh = null;
             GetComponent<MeshCollider>().sharedMesh = mesh;
         }
@@ -209,12 +213,13 @@ namespace DiggingGame.Grid
             UpdateMesh();
         }
 
-        public void ReduceStrength(Vector3 pos)
+        public void ReduceStrength(Vector3Int coord, int value)
         {
-            Vector3Int coord = CoordFromWorldPos(pos);
             if (block_Datas[coord.x, coord.y, coord.z].blockType != BlockType.Sand) return;
-            if(--block_Datas[coord.x, coord.y, coord.z].strength == 0)
+            block_Datas[coord.x, coord.y, coord.z].strength -= value;
+            if (block_Datas[coord.x, coord.y, coord.z].strength <= 0)
             {
+                block_Datas[coord.x, coord.y, coord.z].strength = 0;
                 block_Datas[coord.x, coord.y, coord.z].blockType = BlockType.Air;
                 GenerateMesh();
             }
@@ -223,7 +228,7 @@ namespace DiggingGame.Grid
         public bool isBlockFree(Vector3 pos)
         {
             Vector3Int coord = CoordFromWorldPos(pos);
-            return block_Datas[coord.x, coord.y, coord.z].blockType != BlockType.Air;
+            return block_Datas[coord.x, coord.y, coord.z].blockType == BlockType.Air;
         }
 
         public Vector3 worldPosFromCoord(Vector3 pos)
@@ -264,5 +269,6 @@ namespace DiggingGame.Grid
         public string GetChunkName() { return chunkName; }
         public void SetChunkName(string name) { chunkName = name; }
         public int GetStrength(Vector3Int coord) { return block_Datas[coord.x, coord.y, coord.z].strength; }
+        public int GetMaxStrength(Vector3Int coord) { return block_Datas[coord.x, coord.y, coord.z].maxStrength; }
     }
 }
