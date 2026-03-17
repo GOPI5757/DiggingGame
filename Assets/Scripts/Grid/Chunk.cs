@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Mathematics;
 
 namespace DiggingGame.Grid
 {
@@ -22,7 +23,7 @@ namespace DiggingGame.Grid
         }
     }
 
-    [RequireComponent(typeof(MeshRenderer), typeof(MeshFilter))]
+    [RequireComponent(typeof(MeshRenderer), typeof(MeshFilter), typeof(MeshCollider))]
     public class Chunk : MonoBehaviour
     {
         [SerializeField] private Vector3Int chunkSize;
@@ -31,6 +32,8 @@ namespace DiggingGame.Grid
         [SerializeField] private List<int> triangles = new List<int>();
 
         [SerializeField] private BlockData[,,] block_Datas;
+
+        private string chunkName;
 
         private Vector3[,] vertexData;
         private int[] triangleData;
@@ -41,9 +44,7 @@ namespace DiggingGame.Grid
         private void Start()
         {
             StoreInitialValues();
-            PrepareBlockData();
-            CreateShape();
-            UpdateMesh();
+            GenerateMesh(true);
         }
 
         private void StoreInitialValues()
@@ -129,31 +130,36 @@ namespace DiggingGame.Grid
     
         private void CreateShape()
         {
-            for(int i = 0; i < chunkSize.x; i++)
+            vertices.Clear();
+            triangles.Clear();
+            for (int i = 0; i < chunkSize.x; i++)
             {
                 for(int j = 0; j < chunkSize.y; j++)
                 {
                     for(int k = 0; k < chunkSize.z; k++)
                     {
-                        for(int l = 0; l < 6; l++)
+                        if (block_Datas[i, j, k].blockType == BlockType.Sand)
                         {
-                            Vector3Int neighbour = block_Datas[i, j, k].coord + boundCheckVector[l];
-                            bool flag = true;
-                            if (CheckBounds(neighbour))
+                            for(int l = 0; l < 6; l++)
                             {
-                                flag = IsCoordFree(neighbour);
-                            }
-
-                            if(flag)
-                            {
-                                for(int p = 0; p < 4; p++)
+                                Vector3Int neighbour = block_Datas[i, j, k].coord + boundCheckVector[l];
+                                bool flag = true;
+                                if (CheckBounds(neighbour))
                                 {
-                                    vertices.Add(block_Datas[i, j, k].localPos + vertexData[l, p]);
+                                    flag = IsCoordFree(neighbour);
                                 }
-                            
-                                for(int m = 0; m < 6; m++)
+
+                                if(flag)
                                 {
-                                    triangles.Add((vertices.Count - 4) + triangleData[m]);
+                                    for(int p = 0; p < 4; p++)
+                                    {
+                                        vertices.Add(block_Datas[i, j, k].localPos + vertexData[l, p]);
+                                    }
+                            
+                                    for(int m = 0; m < 6; m++)
+                                    {
+                                        triangles.Add((vertices.Count - 4) + triangleData[m]);
+                                    }
                                 }
                             }
                         }
@@ -192,6 +198,51 @@ namespace DiggingGame.Grid
             mesh.RecalculateNormals();
 
             GetComponent<Renderer>().material.color = Color.sandyBrown;
+            GetComponent<MeshCollider>().sharedMesh = null;
+            GetComponent<MeshCollider>().sharedMesh = mesh;
+        }
+
+        private void GenerateMesh(bool flag = false)
+        {
+            if (flag) PrepareBlockData();
+            CreateShape();
+            UpdateMesh();
+        }
+
+        public void ReduceStrength(Vector3 pos)
+        {
+            Vector3Int coord = CoordFromWorldPos(pos);
+            if (block_Datas[coord.x, coord.y, coord.z].blockType != BlockType.Sand) return;
+            if(--block_Datas[coord.x, coord.y, coord.z].strength == 0)
+            {
+                block_Datas[coord.x, coord.y, coord.z].blockType = BlockType.Air;
+                GenerateMesh();
+            }
+        }
+
+        public bool isBlockFree(Vector3 pos)
+        {
+            Vector3Int coord = CoordFromWorldPos(pos);
+            return block_Datas[coord.x, coord.y, coord.z].blockType != BlockType.Air;
+        }
+
+        public Vector3 worldPosFromCoord(Vector3 pos)
+        {
+            Vector3Int coord = CoordFromWorldPos(pos);
+            return block_Datas[coord.x, coord.y, coord.z].worldPos;
+        }
+
+        public Vector3Int CoordFromWorldPos(Vector3 pos)
+        {
+            Vector3 finalCoord = transform.position - pos;
+            finalCoord = new Vector3(
+                Mathf.Abs(finalCoord.x), 
+                Mathf.Abs(finalCoord.y), 
+                Mathf.Abs(finalCoord.z)
+            );
+
+            Vector3Int intCoord = Vector3Int.FloorToInt(finalCoord);
+            return intCoord;
         }
 
         private void OnDrawGizmosSelected()
@@ -210,5 +261,8 @@ namespace DiggingGame.Grid
         }
 
         public void SetChunk(Vector3Int val) { chunkSize = val; }
+        public string GetChunkName() { return chunkName; }
+        public void SetChunkName(string name) { chunkName = name; }
+        public int GetStrength(Vector3Int coord) { return block_Datas[coord.x, coord.y, coord.z].strength; }
     }
 }

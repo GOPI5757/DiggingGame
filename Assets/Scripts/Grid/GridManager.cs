@@ -10,6 +10,8 @@ namespace DiggingGame.Grid
 
         [SerializeField] private Vector3Int chunkSize;
 
+        [SerializeField] private string chunkName;
+
         private void Awake()
         {
             
@@ -23,6 +25,7 @@ namespace DiggingGame.Grid
             if (chunkScript != null)
             {
                 chunkScript.SetChunk(chunkSize);
+                chunkScript.SetChunkName(chunkName);
             }
         }
 
