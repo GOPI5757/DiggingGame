@@ -10,7 +10,12 @@ namespace DiggingGame.Grid
 
         [SerializeField] private Vector3Int chunkSize;
 
+        [SerializeField] private GameObject chestPrefab;
+
         [SerializeField] private string chunkName;
+        [SerializeField] private int totalChunks;
+
+        [SerializeField] private int[] strengths;
 
         private void Awake()
         {
@@ -19,13 +24,18 @@ namespace DiggingGame.Grid
 
         void Start()
         {
-            Vector3 pos = Vector3.zero - new Vector3(chunkSize.x / 2, chunkSize.y, chunkSize.z / 2);
-            GameObject ChunkObj = Instantiate(chunkPrefab, pos, Quaternion.identity);
-            Chunk chunkScript = ChunkObj.GetComponent<Chunk>();
-            if (chunkScript != null)
+            for(int i = 0; i < totalChunks; i++)
             {
-                chunkScript.SetChunk(chunkSize);
-                chunkScript.SetChunkName(chunkName);
+                Vector3 pos = (Vector3.zero - new Vector3(0f, i * chunkSize.y, 0f) - new Vector3(chunkSize.x / 2, chunkSize.y, chunkSize.z / 2));
+                GameObject ChunkObj = Instantiate(chunkPrefab, pos, Quaternion.identity);
+                Chunk chunkScript = ChunkObj.GetComponent<Chunk>();
+                if (chunkScript != null)
+                {
+                    int strengthIndex = i > strengths.Length ? strengths.Length - 1 : i;
+                    chunkScript.SetBaseBlockStrength(strengthIndex);
+                    chunkScript.SetChunk(chunkSize);
+                    chunkScript.SetChunkName(chunkName);
+                }
             }
         }
 

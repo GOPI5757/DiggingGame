@@ -1,4 +1,4 @@
-namespace DiggingGame.Grid
+namespace DiggingGame.Enums
 {
     public enum BlockType
     {

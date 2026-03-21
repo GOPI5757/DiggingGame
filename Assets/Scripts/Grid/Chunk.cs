@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Unity.Mathematics;
+using DiggingGame.Enums;
+using DiggingGame.Delegates;
+using DiggingGame.ScriptableObjects;
 
 namespace DiggingGame.Grid
 {
@@ -25,6 +27,13 @@ namespace DiggingGame.Grid
         }
     }
 
+    [System.Serializable]
+    public struct TreasueChestData
+    {
+        public GameObject ChestPrefab;
+        public Material Color;
+    }
+
     [RequireComponent(typeof(MeshRenderer), typeof(MeshFilter), typeof(MeshCollider))]
     public class Chunk : MonoBehaviour
     {
@@ -36,6 +45,10 @@ namespace DiggingGame.Grid
         [SerializeField] private BlockData[,,] block_Datas;
         [SerializeField] private Material sandMat;
 
+        [SerializeField] private TreasureStrengths treasureStrengthSO;
+
+        [SerializeField] private int baseBlockStrength;
+
         private string chunkName;
 
         private Vector3[,] vertexData;
@@ -43,6 +56,8 @@ namespace DiggingGame.Grid
         private Vector3Int[] boundCheckVector;
 
         private Mesh mesh;
+
+        private int chunkIndex;
 
         private void Start()
         {
@@ -120,8 +135,8 @@ namespace DiggingGame.Grid
                         BlockData item = new BlockData(
                             new Vector3Int(i, j, k),
                             BlockType.Sand,
-                            5,
-                            5,
+                            baseBlockStrength,
+                            baseBlockStrength,
                             transform.position + new Vector3(i, j, k),
                             new Vector3(i, j, k)
                         );
@@ -216,10 +231,22 @@ namespace DiggingGame.Grid
         public void ReduceStrength(Vector3Int coord, int value)
         {
             if (block_Datas[coord.x, coord.y, coord.z].blockType != BlockType.Sand) return;
+            int sandValueBef = block_Datas[coord.x, coord.y, coord.z].strength;
+            
             block_Datas[coord.x, coord.y, coord.z].strength -= value;
-            if (block_Datas[coord.x, coord.y, coord.z].strength <= 0)
+            block_Datas[coord.x, coord.y, coord.z].strength = Mathf.Clamp(
+                block_Datas[coord.x, coord.y, coord.z].strength,
+                0,
+                block_Datas[coord.x, coord.y, coord.z].maxStrength
+            );
+
+            int sandValueAft = block_Datas[coord.x, coord.y, coord.z].strength;
+
+            BackpackDelegate.Raise(sandValueBef - sandValueAft);
+
+            if (block_Datas[coord.x, coord.y, coord.z].strength == 0)
             {
-                block_Datas[coord.x, coord.y, coord.z].strength = 0;
+                BlockBreakDelegate.Raise(chunkSize.y, coord.y);
                 block_Datas[coord.x, coord.y, coord.z].blockType = BlockType.Air;
                 GenerateMesh();
             }
@@ -270,5 +297,11 @@ namespace DiggingGame.Grid
         public void SetChunkName(string name) { chunkName = name; }
         public int GetStrength(Vector3Int coord) { return block_Datas[coord.x, coord.y, coord.z].strength; }
         public int GetMaxStrength(Vector3Int coord) { return block_Datas[coord.x, coord.y, coord.z].maxStrength; }
+    
+        public void SetChunkIndex(int value) { chunkIndex = value; }
+        public int GetChunkIndex() { return chunkIndex; }
+
+        public void SetBaseBlockStrength(int value) { baseBlockStrength = value; }
+        public int GetBaseBlockStrength() { return baseBlockStrength; }
     }
 }

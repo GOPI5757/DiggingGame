@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace DiggingGame.Player
 {
+    [RequireComponent(typeof(Rigidbody))]
     public class PlayerController : MonoBehaviour
     {
         [Header("Movement")]

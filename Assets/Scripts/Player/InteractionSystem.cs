@@ -42,8 +42,6 @@ namespace DiggingGame.Player
 
         private void Awake()
         {
-            
-
             currentCoord = -Vector3Int.one;
             prevcoord = currentCoord;
         }
@@ -56,6 +54,8 @@ namespace DiggingGame.Player
 
             controller = GetComponent<PlayerController>();
             controls = controller.GetPlayerControls();
+
+            BlockOverChanges(false);
 
             cam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
         }
@@ -85,6 +85,8 @@ namespace DiggingGame.Player
                 else
                 {
                     BlockOverChanges(false);
+                    currentCoord = -Vector3Int.one;
+                    prevcoord = currentCoord;
                 }
             }
 
@@ -140,7 +142,7 @@ namespace DiggingGame.Player
                 {
                     elapsedBreakTime = 0f;
                     
-                    chunkScript?.ReduceStrength(currentCoord, 1);
+                    chunkScript?.ReduceStrength(currentCoord, breakPower);
                     UpdateUIComponents(hit);
                 }
             }

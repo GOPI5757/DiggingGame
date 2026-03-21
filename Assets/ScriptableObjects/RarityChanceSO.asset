@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31eeacb3a28e5cc4196db2c801fd9e2c, type: 3}
+  m_Name: RarityChanceSO
+  m_EditorClassIdentifier: Assembly-CSharp::DiggingGame.ScriptableObjects.RarityChance
+  chances:
+  - ironChance: 85
+    goldChance: 0
+    diamondChance: 0
+  - ironChance: 60
+    goldChance: 0
+    diamondChance: 0
