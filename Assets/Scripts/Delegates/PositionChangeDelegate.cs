@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public static class DepthChangeDelegate
+public static class PositionChangeDelegate
 {
     public delegate void Event(int currentDepth, Vector3 playerPosition);
     public static Event OnEvent;

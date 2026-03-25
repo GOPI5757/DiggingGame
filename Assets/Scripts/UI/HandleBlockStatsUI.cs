@@ -1,9 +1,10 @@
 using DiggingGame.Delegates;
 using DiggingGame.Events;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static UnityEngine.Rendering.DebugUI;
+using System.Collections.Generic;
 
 namespace DiggingGame.UI
 {
@@ -28,7 +29,6 @@ namespace DiggingGame.UI
         private float interact_divider;
         private float currentDivider;
 
-        private float current_TR_SliderWidth;
         private float dynamic_TR_SliderWidth;
 
         private bool hasReachedInteractSP;
@@ -40,6 +40,12 @@ namespace DiggingGame.UI
 
         private float interactValue;
 
+        private bool isPrevTextGone;
+        private int textIndex;
+        private string prevTitle, currentTitle;
+
+        private Coroutine title_coroutine;
+
         private void Start()
         {
             BlockStatsPanelDelegate<PanelActivationEvent>.OnEvent += HandleBSPanel;
@@ -49,7 +55,11 @@ namespace DiggingGame.UI
 
             interact_divider = constants.initialInteractDivider;
             dynamic_TR_SliderWidth = constants.Initial_TR_SliderWidth;
-            current_TR_SliderWidth = dynamic_TR_SliderWidth;
+            prevTitle = "";
+            currentTitle = "";
+
+            UpdateTMPText(blockNameText, "");
+            //titleSplit("<color=#C3C3C3>C</color>ommon <color=#C3C3C3>C</color>hest");
         }
 
         private void OnDestroy()
@@ -85,7 +95,6 @@ namespace DiggingGame.UI
             canInteractTreasure = evt.canInteractTreasure;
             elapsedDividerTime = 0f;
             currentDivider = interact_divider;
-            current_TR_SliderWidth = dynamic_TR_SliderWidth;
         }
 
         private void Update()
@@ -98,10 +107,8 @@ namespace DiggingGame.UI
 
         private void UpdateUIComponents(UpdatePanelUIEvent evt)
         {
-            UpdateTMPText(blockNameText, evt.blockName);
+            HandleBlockTitle(evt);
 
-            blockNameText.color = HEX_to_Color(evt.colorHex);
-            
             UpdateTMPText(
                 strengthText,
                 evt.currentStrength.ToString() + "/" +
@@ -112,6 +119,95 @@ namespace DiggingGame.UI
                 healthSlider,
                 (float)evt.currentStrength / (float)evt.maxStrength
             );
+        }
+
+        private void HandleBlockTitle(UpdatePanelUIEvent evt)
+        {
+            currentTitle = evt.blockName;
+            if (currentTitle != prevTitle)
+            {
+                if (prevTitle.Length == 0)
+                {
+                    isPrevTextGone = true;
+                    blockNameText.color = HEX_to_Color(evt.colorHex);
+                }
+
+                if (title_coroutine != null)
+                {
+                    StopCoroutine(title_coroutine);
+                    isPrevTextGone = false;
+                }
+                string[] bname_arr = titleSplit(blockNameText.text);
+                SetTextIndex(bname_arr.Length - 1);
+                title_coroutine = StartCoroutine(DynamicTitleUpdate(bname_arr, titleSplit(currentTitle), evt.colorHex));
+            }
+            prevTitle = currentTitle;
+        }
+
+        private string[] titleSplit(string title)
+        {
+            List<string> finalArray = new List<string>();
+            int limitIndex = -1;
+            for(int i = 0; i < title.Length; i++)
+            {
+                if (title[i] == '<' && i >= limitIndex)
+                {
+                    int clr_index = title.IndexOf("</color>", i) + 8;
+                    finalArray.Add(title.Substring(i, clr_index - i));
+                    limitIndex = clr_index;
+                } 
+                else
+                {
+                    if(i >= limitIndex)
+                    {
+                        finalArray.Add(title[i].ToString());
+                    }
+                }
+            }
+
+            //for(int i = 0; i < finalArray.Count; i++)
+            //{
+            //    print(finalArray[i]);
+            //}
+            return finalArray.ToArray();
+        }
+
+        IEnumerator DynamicTitleUpdate(string[] bname_array, string[] new_tit, string finalColorHEX)
+        {
+            while (true)
+            {
+                yield return new WaitForSeconds(constants.blocktitleRevealTime);
+                if(blockNameText.text.Length > 0 && !isPrevTextGone)
+                {
+                    string finalVal = "";
+                    for(int i = 0; i < textIndex; i++)
+                    {
+                        finalVal += bname_array[i];
+                    }
+                    UpdateTMPText(blockNameText, finalVal);
+                    SetTextIndex(textIndex - 1);
+                }
+                else if(blockNameText.text.Length == 0 && !isPrevTextGone)
+                {
+                    isPrevTextGone = true;
+                    blockNameText.color = HEX_to_Color(finalColorHEX);
+
+                } else if(blockNameText.text.Length >= 0 && isPrevTextGone && textIndex < new_tit.Length)
+                {
+                    UpdateTMPText(blockNameText, blockNameText.text + new_tit[textIndex++]);
+                } else
+                {
+                    textIndex = 0;
+                    isPrevTextGone = false;
+                    break;
+                }
+            }
+        }
+
+        private void SetTextIndex(int value)
+        {
+            textIndex = value;
+            textIndex = Mathf.Clamp(textIndex, 0, int.MaxValue);
         }
 
         private Color HEX_to_Color(string hex)
@@ -147,6 +243,7 @@ namespace DiggingGame.UI
         {
             interactValue = elapsedInteractTime / constants.treasureInteractionTime;
             UpdateSlider(treasureSlider, interactValue);
+
             dynamic_TR_SliderWidth = Mathf.Lerp(
                 constants.Initial_TR_SliderWidth,
                 constants.target_TR_SliderWidth,

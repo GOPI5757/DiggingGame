@@ -64,7 +64,7 @@ namespace DiggingGame.Grid
             player.GetComponent<PlayerData>().RaiseDepthChangeDelegate();
         }
 
-        private void UpdateChunkObjects(int currentDepth)
+        private void UpdateChunkObjects(int currentDepth, Vector3 playerPosition)
         {
             for(int i = 0; i < chunkObjects.Count; i++)
             {

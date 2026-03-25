@@ -16,6 +16,7 @@ namespace DiggingGame.Player
         [SerializeField] private int breakPower;
 
         private bool isOverBlock;
+        private bool isOverTreasure;
 
         private Vector3Int prevcoord;
         private Vector3Int currentCoord;
@@ -112,6 +113,7 @@ namespace DiggingGame.Player
 
         private void HandleTreasureInteraction()
         {
+            if (!isOverTreasure) return;
             if(controls.Player.Interact.WasPressedThisFrame())
             {
                 BlockStatsPanelDelegate<TreasureInteractEvent>.Raise(
@@ -171,6 +173,7 @@ namespace DiggingGame.Player
         private void BlockOverChanges(bool value, bool isTreasure = false)
         {
             isOverBlock = value;
+            isOverTreasure = isTreasure;
             BlockStatsPanelDelegate<PanelActivationEvent>.Raise(
                 new PanelActivationEvent(isTreasure ? true : value, isTreasure)
             );

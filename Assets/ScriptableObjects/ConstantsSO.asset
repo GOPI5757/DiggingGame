@@ -20,3 +20,4 @@ MonoBehaviour:
   dividerChangeTime: 0.5
   Initial_TR_SliderWidth: 80
   target_TR_SliderWidth: 90
+  blocktitleRevealTime: 0.02

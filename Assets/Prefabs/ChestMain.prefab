@@ -172,7 +172,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -193,6 +193,10 @@ MonoBehaviour:
   rarity: 0
   KeyObj: {fileID: 5587789165296287133}
   treasureStrengths: {fileID: 11400000, guid: 4de87eba655c40e458bfe442a8766393, type: 2}
+  closeDepthDifference: 4
+  obstacleLayer:
+    serializedVersion: 2
+    m_Bits: 64
 --- !u!1 &5587789165296287133
 GameObject:
   m_ObjectHideFlags: 0

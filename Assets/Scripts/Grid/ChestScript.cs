@@ -10,7 +10,10 @@ namespace DiggingGame.Grid
         [SerializeField] private TreasureRarity rarity;
         [SerializeField] private GameObject KeyObj;
         [SerializeField] private TreasureStrengths treasureStrengths;
-        
+        [SerializeField] private int closeDepthDifference;
+        [SerializeField] private LayerMask obstacleLayer;
+
+        private int currentDepth;
         private Chunk linkedChunk;
         private string treasureName;
         private string titleTextColorHEX;
@@ -43,6 +46,8 @@ namespace DiggingGame.Grid
         public void SetLinkedChunk(Chunk value) { linkedChunk = value; }
         public Chunk GetLinkedChunk() { return linkedChunk; }
 
+        public void SetCurrentDepth(int value) { currentDepth = value; }
+
         private void Start()
         {
             for(int i = 0; i < treasureStrengths.t_stats.Length; i++)
@@ -52,6 +57,33 @@ namespace DiggingGame.Grid
                     KeyObj.GetComponent<Renderer>().material = treasureStrengths.t_stats[i].KeyMat;
                 }
             }
+
+            PositionChangeDelegate.OnEvent += HandleRotation;
+        }
+
+        private void OnDestroy()
+        {
+            PositionChangeDelegate.OnEvent -= HandleRotation;
+        }
+
+        private void HandleRotation(int playerDepth, Vector3 playerPosition)
+        {
+            if(Mathf.Abs(Mathf.Abs(playerDepth) - currentDepth) <= closeDepthDifference)
+            {
+                Vector2 ScreenPoint = Camera.main.WorldToScreenPoint(transform.position);
+                bool isHidden = Physics.Linecast(Camera.main.transform.position, transform.position, obstacleLayer);
+                if(!isCameraVisible(ScreenPoint) || (isCameraVisible(ScreenPoint) && isHidden))
+                {
+                    transform.LookAt(playerPosition);
+                    float snappedAngle = Mathf.Round(transform.eulerAngles.y / 90f) * 90f;
+                    transform.eulerAngles = new Vector3(0f, snappedAngle, 0f);
+                }
+            }
+        }
+
+        private bool isCameraVisible(Vector2 point)
+        {
+            return point.x >= 0f && point.x <= Screen.width && point.y >= 0f && point.y <= Screen.height;
         }
     }
 }

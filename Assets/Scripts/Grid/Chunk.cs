@@ -204,6 +204,7 @@ namespace DiggingGame.Grid
                                 chestScript.SetTreasureNames();
                                 chestScript.SetTitleTextColorHEX();
                                 chestScript.SetLinkedChunk(this);
+                                chestScript.SetCurrentDepth(Mathf.Abs(Mathf.FloorToInt(spawnPos.y + 0.01f)));
                             }
 
                             chestObjects.Add(chestObj);

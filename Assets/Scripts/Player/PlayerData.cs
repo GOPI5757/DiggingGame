@@ -6,6 +6,7 @@ using DiggingGame.ScriptableObjects;
 using DiggingGame.Grid;
 using DiggingGame.Enums;
 using DiggingGame.Config;
+using Unity.VisualScripting;
 
 namespace DiggingGame.Player
 {
@@ -34,6 +35,8 @@ namespace DiggingGame.Player
         private int currentIron;
         private int currentGold;
         private int currentDiamond;
+
+        private Vector3Int currentPosInt, prevPosInt;
 
         private int chanceIndex;
 
@@ -79,6 +82,7 @@ namespace DiggingGame.Player
         private void Update()
         {
             CalculateDepth();
+            CalculatePosition();
         }
 
         private void CalculateDepth()
@@ -93,7 +97,17 @@ namespace DiggingGame.Player
             lastDepth = currentDepth;
         }
 
-        public void RaiseDepthChangeDelegate() => DepthChangeDelegate.Raise(Mathf.FloorToInt(transform.position.y + 0.01f));
+        private void CalculatePosition()
+        {
+            currentPosInt = Vector3Int.FloorToInt(new Vector3(transform.position.x, transform.position.y + 0.01f, transform.position.z));
+            if(currentPosInt != prevPosInt)
+            {
+                PositionChangeDelegate.Raise(currentPosInt.y, transform.position);
+            }
+            prevPosInt = currentPosInt;
+        }
+
+        public void RaiseDepthChangeDelegate() => DepthChangeDelegate.Raise(Mathf.FloorToInt(transform.position.y + 0.01f), transform.position);
 
         private void UpdateDepthDisplay() => UpdateTMPText(displayTextConfig.depthDisplayText, "Depth\n" + currentDepth.ToString() + " Blocks");
         private void UpdateBackpackText() => UpdateTMPText(displayTextConfig.backpackStorageText, currentBackpackStorage.ToString() + " / " + maxBackpackStorage.ToString());
@@ -123,11 +137,6 @@ namespace DiggingGame.Player
             {
                 UpdateCoins();
             }
-        }
-
-        private void OnCollisionEnter(Collision collision)
-        {
-
         }
     }
 }

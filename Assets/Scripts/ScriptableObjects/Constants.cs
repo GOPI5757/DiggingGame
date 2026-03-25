@@ -10,4 +10,6 @@ public class Constants : ScriptableObject
     public float dividerChangeTime;
 
     public float Initial_TR_SliderWidth, target_TR_SliderWidth;
+
+    public float blocktitleRevealTime;
 }

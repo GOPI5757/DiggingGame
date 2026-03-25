@@ -15,12 +15,12 @@ MonoBehaviour:
   treasurePerChunk:
   - treasureCounts:
     - Rarity: 0
-      Count: 5
-    - Rarity: 4
-      Count: 2
+      Count: 10
     - Rarity: 1
-      Count: 2
+      Count: 5
     - Rarity: 2
-      Count: 2
+      Count: 8
     - Rarity: 3
-      Count: 2
+      Count: 10
+    - Rarity: 4
+      Count: 4
