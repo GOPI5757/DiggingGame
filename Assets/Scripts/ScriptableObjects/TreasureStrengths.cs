@@ -8,13 +8,15 @@ namespace DiggingGame.ScriptableObjects
     public struct TreasureStats
     {
         public TreasureRarity Rarity;
-        public int Strength;
+        public int Chances;
+        public int miniGame;
         public Material Mat;
+        public Material KeyMat;
     }
 
     [CreateAssetMenu(fileName = "TreasureStrengthSO", menuName = "Treasure/SO/TreasureStrengthSO")]
     public class TreasureStrengths : ScriptableObject
     {
-        [SerializeField] private TreasureStats[] t_stats;
+        public TreasureStats[] t_stats;
     }
 }

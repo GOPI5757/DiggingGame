@@ -12,7 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 966059cd270059f4aaf5449f6b9a27ba, type: 3}
   m_Name: TreasureChunkStatsSO
   m_EditorClassIdentifier: Assembly-CSharp::ChunkStats
-  treasureCount:
+  treasurePerChunk:
   - treasureCounts:
     - Rarity: 0
-      Count: 10
+      Count: 5
+    - Rarity: 4
+      Count: 2
+    - Rarity: 1
+      Count: 2
+    - Rarity: 2
+      Count: 2
+    - Rarity: 3
+      Count: 2

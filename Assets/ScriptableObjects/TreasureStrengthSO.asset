@@ -14,17 +14,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TreasureStrength
   t_stats:
   - Rarity: 0
-    Strength: 1
-    Mat: {fileID: 2100000, guid: 98993462e82eb2144a3f2a1f1ea397f8, type: 2}
+    Chances: 5
+    miniGame: 1
+    Mat: {fileID: 2100000, guid: d6090dcfcb5db7e44bbd4ea9f14c4c7f, type: 2}
+    KeyMat: {fileID: 2100000, guid: c7bde26612ae6754eb07f311bd240371, type: 2}
   - Rarity: 1
-    Strength: 5
-    Mat: {fileID: 0}
-  - Rarity: 0
-    Strength: 0
-    Mat: {fileID: 0}
-  - Rarity: 0
-    Strength: 0
-    Mat: {fileID: 0}
-  - Rarity: 0
-    Strength: 0
-    Mat: {fileID: 0}
+    Chances: 0
+    miniGame: 0
+    Mat: {fileID: 2100000, guid: 8f26dea86372380479d6d0fd609dbe24, type: 2}
+    KeyMat: {fileID: 2100000, guid: e194333563b420d4694a85c3676e8035, type: 2}
+  - Rarity: 2
+    Chances: 0
+    miniGame: 0
+    Mat: {fileID: 2100000, guid: 51fc260ef2d47ae49af39e32d1336801, type: 2}
+    KeyMat: {fileID: 2100000, guid: 28225c510dd6a3e40b03a6ed9e74456a, type: 2}
+  - Rarity: 3
+    Chances: 0
+    miniGame: 0
+    Mat: {fileID: 2100000, guid: f35f0e5057ff64a48b443f4eda361950, type: 2}
+    KeyMat: {fileID: 2100000, guid: 4682e4014a58e8740a66e1f43e33af25, type: 2}
+  - Rarity: 4
+    Chances: 0
+    miniGame: 0
+    Mat: {fileID: 2100000, guid: 840bb663bbd5eac40902d772e9105383, type: 2}
+    KeyMat: {fileID: 2100000, guid: 74b5dbae5e562314ba8410b6ac8b2207, type: 2}

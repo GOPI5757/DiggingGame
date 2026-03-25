@@ -13,13 +13,13 @@ namespace DiggingGame.ScriptableObjects
     [System.Serializable]
     public struct TreasuresPerChunk
     {
-        [SerializeField] private TreasureCount[] treasureCounts;
+        public TreasureCount[] treasureCounts;
     }
 
 
     [CreateAssetMenu(fileName = "TreasureChunkStatsSO", menuName = "Treasure/SO/TreasureChunkStatsSO")]
     public class ChunkStats : ScriptableObject
     {
-        [SerializeField] private TreasuresPerChunk[] treasureCount;
+        public TreasuresPerChunk[] treasurePerChunk;
     }
 }

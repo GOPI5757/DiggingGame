@@ -1,8 +1,9 @@
-using UnityEngine;
-using System.Collections.Generic;
-using DiggingGame.Enums;
 using DiggingGame.Delegates;
+using DiggingGame.Enums;
 using DiggingGame.ScriptableObjects;
+using System.Collections.Generic;
+using System.Drawing;
+using UnityEngine;
 
 namespace DiggingGame.Grid
 {
@@ -27,13 +28,6 @@ namespace DiggingGame.Grid
         }
     }
 
-    [System.Serializable]
-    public struct TreasueChestData
-    {
-        public GameObject ChestPrefab;
-        public Material Color;
-    }
-
     [RequireComponent(typeof(MeshRenderer), typeof(MeshFilter), typeof(MeshCollider))]
     public class Chunk : MonoBehaviour
     {
@@ -46,6 +40,10 @@ namespace DiggingGame.Grid
         [SerializeField] private Material sandMat;
 
         [SerializeField] private TreasureStrengths treasureStrengthSO;
+        [SerializeField] private ChunkStats treasureStatsSO;
+
+        [SerializeField] private GameObject chestPrefab;
+        [SerializeField] private string colorHex;
 
         [SerializeField] private int baseBlockStrength;
 
@@ -56,8 +54,23 @@ namespace DiggingGame.Grid
         private Vector3Int[] boundCheckVector;
 
         private Mesh mesh;
+        private MeshRenderer meshRenderer;
+        private MeshCollider meshCollider;
+
+        private Transform chunkParent;
+        private Transform chestParent;
+
+        private float[] randomRotation = { 0f, 90f, 180f, 270f };
+
+        private List<GameObject> chestObjects = new List<GameObject>();
 
         private int chunkIndex;
+
+        private void Awake()
+        {
+            meshRenderer = GetComponent<MeshRenderer>();
+            meshCollider = GetComponent<MeshCollider>();
+        }
 
         private void Start()
         {
@@ -67,6 +80,10 @@ namespace DiggingGame.Grid
 
         private void StoreInitialValues()
         {
+            chunkParent = GameObject.FindGameObjectWithTag("chunkParent").transform;
+            chestParent = GameObject.FindGameObjectWithTag("chestParent").transform;
+
+            transform.parent = chunkParent;
             mesh = new Mesh();
             GetComponent<MeshFilter>().mesh = mesh;
             block_Datas = new BlockData[chunkSize.x, chunkSize.y, chunkSize.z];
@@ -145,6 +162,94 @@ namespace DiggingGame.Grid
                     }
                 }
             }
+
+            SpawnChest();
+        }
+
+        private void SpawnChest()
+        {
+            int finalChunkIndex = chunkIndex >= treasureStatsSO.treasurePerChunk.Length ?
+                treasureStatsSO.treasurePerChunk.Length - 1 : chunkIndex;
+
+            int treasureCounts = treasureStatsSO.treasurePerChunk[finalChunkIndex].treasureCounts.Length;
+            TreasureCount[] t_count = treasureStatsSO.treasurePerChunk[finalChunkIndex].treasureCounts;
+            for (int i = 0; i < treasureCounts; i++)
+            {
+                for (int j = 0; j < t_count[i].Count; j++)
+                {
+                    bool flag = true;
+                    do
+                    {
+                        Vector3Int coord = new Vector3Int(RandPos(), RandPos(true), RandPos());
+                        flag = checkForTreasure(coord, 1) && checkForTreasure(coord, -1) && checkForTreasure(coord, 0);
+                        if (flag)
+                        {
+                            block_Datas[coord.x, coord.y, coord.z].blockType = BlockType.Treasure;
+                            
+                            Vector3 spawnPos = block_Datas[coord.x, coord.y, coord.z].worldPos + 
+                                new Vector3(0.5f, 0.5f, 0.5f);
+                            
+                            int randY = Random.Range(0, 4);
+                            Vector3 randRot = new Vector3(0f, randomRotation[randY], 0f);
+                            
+                            GameObject chestObj = Instantiate(
+                                chestPrefab, spawnPos, Quaternion.Euler(randRot));
+                            chestObj.transform.parent = chestParent;
+
+                            chestObj.transform.GetChild(0).GetComponent<Renderer>().material = SearchRarityMaterial(t_count[i].Rarity);
+                       
+                            if(chestObj.TryGetComponent(out ChestScript chestScript))
+                            {
+                                chestScript.SetRarity(t_count[i].Rarity);
+                                chestScript.SetTreasureNames();
+                                chestScript.SetTitleTextColorHEX();
+                                chestScript.SetLinkedChunk(this);
+                            }
+
+                            chestObjects.Add(chestObj);
+                        }
+                    } while (!flag);
+                }
+            }
+        }
+
+        private Material SearchRarityMaterial(TreasureRarity rarity)
+        {
+            Material mat = null;
+            for(int i = 0; i < treasureStrengthSO.t_stats.Length; i++)
+            {
+                if (treasureStrengthSO.t_stats[i].Rarity == rarity)
+                {
+                    mat = treasureStrengthSO.t_stats[i].Mat;
+                    break;
+                }
+            }
+            return mat;
+        }
+
+        private bool checkForTreasure(Vector3Int coord, int m)
+        {
+            bool flag = true;  
+            if (CheckCoordBound(coord.y + m, chunkSize.y))
+            {
+                if (isBlockTreasure(new Vector3Int(coord.x, coord.y + m, coord.z)))
+                {
+                    flag = false;
+                }
+            }
+            return flag;
+        }
+
+        private int RandPos(bool isY = false)
+        {
+            int val;
+            do
+            {
+                val = Random.Range(0, chunkSize.x);
+                if ((val < chunkSize.x - 1 && isY) || !isY) break;
+            } while (true);
+
+            return val;
         }
     
         private void CreateShape()
@@ -203,7 +308,7 @@ namespace DiggingGame.Grid
 
         private bool IsCoordFree(Vector3Int coord)
         {
-            return block_Datas[coord.x, coord.y, coord.z].blockType == BlockType.Air;   
+            return block_Datas[coord.x, coord.y, coord.z].blockType != BlockType.Sand;   
         }
 
         private void UpdateMesh()
@@ -216,9 +321,9 @@ namespace DiggingGame.Grid
             mesh.triangles = triangles.ToArray();
             mesh.RecalculateNormals();
 
-            GetComponent<Renderer>().material = sandMat;
-            GetComponent<MeshCollider>().sharedMesh = null;
-            GetComponent<MeshCollider>().sharedMesh = mesh;
+            meshRenderer.material = sandMat;
+            meshCollider.sharedMesh = null;
+            meshCollider.sharedMesh = mesh;
         }
 
         private void GenerateMesh(bool flag = false)
@@ -258,6 +363,11 @@ namespace DiggingGame.Grid
             return block_Datas[coord.x, coord.y, coord.z].blockType == BlockType.Air;
         }
 
+        public bool isBlockTreasure(Vector3Int coord)
+        {
+            return block_Datas[coord.x, coord.y, coord.z].blockType == BlockType.Treasure;
+        }
+
         public Vector3 worldPosFromCoord(Vector3 pos)
         {
             Vector3Int coord = CoordFromWorldPos(pos);
@@ -275,6 +385,14 @@ namespace DiggingGame.Grid
 
             Vector3Int intCoord = Vector3Int.FloorToInt(finalCoord);
             return intCoord;
+        }
+
+        public void HandleChestObjects(bool is_active)
+        {
+            for(int i = 0; i < chestObjects.Count; i++)
+            {
+                chestObjects[i].SetActive(is_active);
+            }
         }
 
         private void OnDrawGizmosSelected()
@@ -303,5 +421,6 @@ namespace DiggingGame.Grid
 
         public void SetBaseBlockStrength(int value) { baseBlockStrength = value; }
         public int GetBaseBlockStrength() { return baseBlockStrength; }
+        public string GetColorHEX() { return colorHex; }
     }
 }

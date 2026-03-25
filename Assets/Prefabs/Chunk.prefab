@@ -130,3 +130,8 @@ MonoBehaviour:
   vertices: []
   triangles: 
   sandMat: {fileID: 2100000, guid: ee15834aaf6a20348b5ee1b92812faed, type: 2}
+  treasureStrengthSO: {fileID: 11400000, guid: 4de87eba655c40e458bfe442a8766393, type: 2}
+  treasureStatsSO: {fileID: 11400000, guid: 25e49c2159b70f4459303c9babef03d5, type: 2}
+  chestPrefab: {fileID: 5245633194231470805, guid: c759dd8012ff89243a8a4bef9d7c56e1, type: 3}
+  colorHex: '#FFE6B3'
+  baseBlockStrength: 0

@@ -5,18 +5,21 @@ using Unity.VisualScripting.FullSerializer;
 using DiggingGame.ScriptableObjects;
 using DiggingGame.Grid;
 using DiggingGame.Enums;
+using DiggingGame.Config;
 
 namespace DiggingGame.Player
 {
     public class PlayerData : MonoBehaviour
     {
         [SerializeField] private int maxBackpackStorage;
-        [SerializeField] private TMP_Text backpackStorageText;
-        [SerializeField] private TMP_Text coinsDisplayText;
-        [SerializeField] private TMP_Text depthDisplayText;
-        [SerializeField] private TMP_Text ironDisplayText;
-        [SerializeField] private TMP_Text goldDisplayText;
-        [SerializeField] private TMP_Text diamondDisplayText;
+        //[SerializeField] private TMP_Text backpackStorageText;
+        //[SerializeField] private TMP_Text coinsDisplayText;
+        //[SerializeField] private TMP_Text depthDisplayText;
+        //[SerializeField] private TMP_Text ironDisplayText;
+        //[SerializeField] private TMP_Text goldDisplayText;
+        //[SerializeField] private TMP_Text diamondDisplayText;
+
+        [SerializeField] private DisplayText displayTextConfig;
 
         [SerializeField] private int coinsPerSand;
 
@@ -38,6 +41,7 @@ namespace DiggingGame.Player
         {
             BackpackDelegate.OnEvent += OnBackpack;
             BlockBreakDelegate.OnEvent += OnBlockBreak;
+
             UpdateBackpackText();
         }
 
@@ -82,20 +86,23 @@ namespace DiggingGame.Player
             currentDepth = Mathf.Abs(Mathf.FloorToInt(transform.position.y + 0.01f));
             if (currentDepth != lastDepth)
             {
+                RaiseDepthChangeDelegate();
                 UpdateDepthDisplay();
             }
 
             lastDepth = currentDepth;
         }
 
-        private void UpdateDepthDisplay() => UpdateTMPText(depthDisplayText, "Depth\n" + currentDepth.ToString() + " Blocks");
-        private void UpdateBackpackText() => UpdateTMPText(backpackStorageText, currentBackpackStorage.ToString() + " / " + maxBackpackStorage.ToString());
+        public void RaiseDepthChangeDelegate() => DepthChangeDelegate.Raise(Mathf.FloorToInt(transform.position.y + 0.01f));
 
-        private void UpdateIronText() => UpdateTMPText(ironDisplayText, currentIron.ToString());
-        private void UpdateGoldText() => UpdateTMPText(ironDisplayText, currentGold.ToString());
-        private void UpdateDiamondText() => UpdateTMPText(ironDisplayText, currentDiamond.ToString());
+        private void UpdateDepthDisplay() => UpdateTMPText(displayTextConfig.depthDisplayText, "Depth\n" + currentDepth.ToString() + " Blocks");
+        private void UpdateBackpackText() => UpdateTMPText(displayTextConfig.backpackStorageText, currentBackpackStorage.ToString() + " / " + maxBackpackStorage.ToString());
 
-        private void UpdateCoinsText() => UpdateTMPText(coinsDisplayText, currentCoins.ToString());
+        private void UpdateIronText() => UpdateTMPText(displayTextConfig.ironDisplayText, currentIron.ToString());
+        private void UpdateGoldText() => UpdateTMPText(displayTextConfig.goldDisplayText, currentGold.ToString());
+        private void UpdateDiamondText() => UpdateTMPText(displayTextConfig.diamondDisplayText, currentDiamond.ToString());
+
+        private void UpdateCoinsText() => UpdateTMPText(displayTextConfig.coinsDisplayText, currentCoins.ToString());
 
         private void UpdateTMPText(TMP_Text text, string value) => text.text = value;
 

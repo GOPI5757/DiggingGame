@@ -1,9 +1,8 @@
+using DiggingGame.Events;
 using DiggingGame.Grid;
-using TMPro;
+using System.Drawing;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
-using static UnityEngine.Rendering.DebugUI;
 
 namespace DiggingGame.Player
 {
@@ -14,7 +13,6 @@ namespace DiggingGame.Player
 
         [SerializeField] private LayerMask chunkLayer;
         [SerializeField] private GameObject wireCube;
-        [SerializeField] private float blockBreakTime;
         [SerializeField] private int breakPower;
 
         private bool isOverBlock;
@@ -24,15 +22,6 @@ namespace DiggingGame.Player
 
         private Chunk chunkScript;
 
-        [Header("UI")]
-
-        [SerializeField] private GameObject blockStatsPanel;
-        [SerializeField] private Slider breakSlider;
-        [SerializeField] private Slider healthSlider;
-        [SerializeField] private TMP_Text blockNameText;
-        [SerializeField] private TMP_Text strengthText;
-
-        private float elapsedBreakTime;
         private PlayerControls controls;
 
         PlayerController controller;
@@ -47,6 +36,18 @@ namespace DiggingGame.Player
         }
 
         private void Start()
+        {
+            InitialSetup();
+
+            BlockStatsPanelDelegate<PostBlockBreakEvent>.OnEvent += PostBlockBreak;
+        }
+
+        private void OnDestroy()
+        {
+            BlockStatsPanelDelegate<PostBlockBreakEvent>.OnEvent -= PostBlockBreak;
+        }
+
+        private void InitialSetup()
         {
             Cursor.visible = false;
             Cursor.lockState = CursorLockMode.Confined;
@@ -64,11 +65,12 @@ namespace DiggingGame.Player
         {
             HandleMouseOver();
             HandleBlockPress();
+            HandleTreasureInteraction();
         }
 
         private void HandleMouseOver()
         {
-            Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0));
+            Ray ray = cam.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0));
             Physics.Raycast(ray, out hit, float.MaxValue);
             if (hit.collider != null)
             {
@@ -81,84 +83,148 @@ namespace DiggingGame.Player
                         HandleWireCubePosition(hit.collider.gameObject);
                         prevcoord = currentCoord;
                     }
+                } else if(hit.collider.gameObject.CompareTag("treasure"))
+                {
+                    currentCoord = GetCurrentCoord(hit.collider.gameObject);
+                    if (currentCoord != prevcoord)
+                    {
+                        BlockOverChanges(false, true);
+                        HandleWireCubePosition(hit.collider.gameObject);
+                        prevcoord = currentCoord;
+                    }
                 }
                 else
                 {
-                    BlockOverChanges(false);
-                    currentCoord = -Vector3Int.one;
-                    prevcoord = currentCoord;
+                    MouseExit();
                 }
+            } else
+            {
+                MouseExit();
             }
 
             if (controls.Player.BreakBlock.WasReleasedThisFrame())
             {
-                elapsedBreakTime = 0f;
-                breakSlider.value = 0f;
-                SetGamepadMotorSpeed(0f, 0f);
+                BlockStatsPanelDelegate<BreakingBlockEvent>.Raise(new BreakingBlockEvent(
+                    false, false)
+                );
             }
+        }
+
+        private void HandleTreasureInteraction()
+        {
+            if(controls.Player.Interact.WasPressedThisFrame())
+            {
+                BlockStatsPanelDelegate<TreasureInteractEvent>.Raise(
+                    new TreasureInteractEvent(true)
+                );
+            } else if(controls.Player.Interact.WasReleasedThisFrame())
+            {
+                BlockStatsPanelDelegate<TreasureInteractEvent>.Raise(
+                    new TreasureInteractEvent(false)
+                );
+            }
+        }
+
+        private void MouseExit()
+        {
+            BlockOverChanges(false);
+            currentCoord = -Vector3Int.one;
+            prevcoord = currentCoord;
         }
 
         private void HandleWireCubePosition(GameObject chunkObj)
         {
-            if (chunkScript != null)
+            Chunk script = chunkScript != null ? chunkScript : 
+                chunkObj.GetComponent<ChestScript>().GetLinkedChunk();
+            SetWireCubePosition(script);
+        }
+
+        private void SetWireCubePosition(Chunk script)
+        {
+            if(script != null)
             {
-                if (!chunkScript.isBlockFree(GetHitPos(hit)))
+                if (!script.isBlockFree(GetHitPos(hit)))
                 {
-                    wireCube.transform.position = chunkScript.worldPosFromCoord(GetHitPos(hit)) + (Vector3.one / 2);
+                    wireCube.transform.position = script.worldPosFromCoord(GetHitPos(hit)) + (Vector3.one / 2);
                 }
             }
         }
 
-        private void UpdateUIComponents(RaycastHit hit)
+        private void PostBlockBreak(PostBlockBreakEvent evt)
         {
-            if (chunkScript != null)
-            {
-                Vector3Int coord = chunkScript.CoordFromWorldPos(GetHitPos(hit));
-                UpdateTMPText(blockNameText, chunkScript.GetChunkName());
-                UpdateTMPText(
-                    strengthText,
-                    chunkScript.GetStrength(coord).ToString() + "/" +
-                    chunkScript.GetMaxStrength(coord).ToString()
-                );
-
-                UpdateSlider(
-                    healthSlider,
-                    (float)chunkScript.GetStrength(coord) / (float)chunkScript.GetMaxStrength(coord)
-                );
-            }
+            chunkScript?.ReduceStrength(currentCoord, breakPower);
+            FireUIUpdation();
         }
 
         private void HandleBlockPress()
         {
             if (!isOverBlock) return;
-            if (controls.Player.BreakBlock.IsPressed())
+
+            if(controls.Player.BreakBlock.WasPressedThisFrame())
             {
-                float value = elapsedBreakTime / blockBreakTime;
-                UpdateSlider(breakSlider, value);
-                
-                SetGamepadMotorSpeed(value / 2f, value);
-                elapsedBreakTime += Time.deltaTime;
-                if (value >= 1)
-                {
-                    elapsedBreakTime = 0f;
-                    
-                    chunkScript?.ReduceStrength(currentCoord, breakPower);
-                    UpdateUIComponents(hit);
-                }
+                BlockStatsPanelDelegate<BreakingBlockEvent>.Raise(
+                    new BreakingBlockEvent(true, false)
+                );
             }
         }
 
-        private void BlockOverChanges(bool value)
+        private void BlockOverChanges(bool value, bool isTreasure = false)
         {
             isOverBlock = value;
-            blockStatsPanel.SetActive(value);
-            wireCube.SetActive(value);
-            elapsedBreakTime = 0f;
-            chunkScript = hit.collider == null ? null : hit.collider.GetComponent<Chunk>();
+            BlockStatsPanelDelegate<PanelActivationEvent>.Raise(
+                new PanelActivationEvent(isTreasure ? true : value, isTreasure)
+            );
+
+            BlockStatsPanelDelegate<BreakingBlockEvent>.Raise(
+                new BreakingBlockEvent(false, true)
+            );
+
+            wireCube.SetActive(isTreasure ? true : value);
+            chunkScript = value ? hit.collider.GetComponent<Chunk>() : null;
 
             if (value)
             {
-                UpdateUIComponents(hit);
+                FireUIUpdation();
+            } 
+            else if(isTreasure)
+            {
+                FireUIUpdation(true);
+            }
+        }
+
+        private void FireUIUpdation(bool isTreasure=false)
+        {
+            if (isTreasure)
+            {
+                if(hit.collider != null)
+                {
+                    if(hit.collider.TryGetComponent(out ChestScript script))
+                    {
+                        BlockStatsPanelDelegate<UpdatePanelUIEvent>.Raise(
+                            new UpdatePanelUIEvent(
+                                script.GetTreasureName(),
+                                script.GetTitleTextColorHEX(),
+                                0,
+                                1
+                            )
+                        );
+                    }
+                }
+            } 
+            else
+            {
+                if (chunkScript != null)
+                {
+                    Vector3Int coord = chunkScript.CoordFromWorldPos(GetHitPos(hit));
+                    BlockStatsPanelDelegate<UpdatePanelUIEvent>.Raise(
+                        new UpdatePanelUIEvent(
+                            chunkScript.GetChunkName(),
+                            chunkScript.GetColorHEX(),
+                            chunkScript.GetStrength(coord),
+                            chunkScript.GetMaxStrength(coord)
+                        )
+                    );
+                }
             }
         }
 
@@ -168,22 +234,17 @@ namespace DiggingGame.Player
             Gamepad.current.SetMotorSpeeds(low, high);
         }
 
-        private void UpdateTMPText(TMP_Text text, string value)
-        {
-            text.text = value;  
-        }
-
-        private void UpdateSlider(Slider slider, float value)
-        {
-            slider.value = value;
-        }
-
         private Vector3Int GetCurrentCoord(GameObject chunkObj)
         {
-            return chunkObj.GetComponent<Chunk>().CoordFromWorldPos(GetHitPos(hit));
+            Chunk script;
+            if(chunkObj.TryGetComponent<Chunk>(out script)) { }
+            else
+            {
+                script = chunkObj.GetComponent<ChestScript>().GetLinkedChunk();
+            }
+            return script.CoordFromWorldPos(GetHitPos(hit));
         }
         
         private Vector3 GetHitPos(RaycastHit hit) { return hit.point - (hit.normal * 0.01f); }
-
     }
 }

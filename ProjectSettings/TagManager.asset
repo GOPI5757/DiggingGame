@@ -6,6 +6,9 @@ TagManager:
   tags:
   - chunk
   - SellArea
+  - chunkParent
+  - chestParent
+  - treasure
   layers:
   - Default
   - TransparentFX
@@ -14,7 +17,7 @@ TagManager:
   - Water
   - UI
   - chunk
-  - 
+  - other
   - 
   - 
   - 
